@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSession, authClient } from '@/lib/auth-client';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, login, logout } = useAuth();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const user = session?.user;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Common links for both states
@@ -35,15 +37,15 @@ export default function Navbar() {
     : [...commonLinks, ...loggedOutLinks];
 
   // Trigger simulated actions
-  const handleAuthAction = (label: string, e: React.MouseEvent) => {
-    if (label === 'Login' || label === 'Register') {
-      e.preventDefault();
-      login('John Doe', 'john@staynest.com');
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await authClient.signOut();
       setIsMobileMenuOpen(false);
-    } else if (label === 'Logout') {
-      e.preventDefault();
-      logout();
-      setIsMobileMenuOpen(false);
+      router.push('/');
+      router.refresh();
+    } catch (err) {
+      console.error('Logout error:', err);
     }
   };
 
@@ -105,18 +107,20 @@ export default function Navbar() {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
-              {user ? (
+              {isPending ? (
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-emerald-600" />
+              ) : user ? (
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col text-right">
                     <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                       {user.name}
                     </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Host
+                      User
                     </span>
                   </div>
                   <button
-                    onClick={(e) => handleAuthAction('Logout', e)}
+                    onClick={handleLogout}
                     className="rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-4 h-10 text-sm font-semibold text-zinc-800 dark:text-zinc-200 transition-colors duration-200"
                   >
                     Logout
@@ -124,18 +128,18 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => handleAuthAction('Login', e)}
+                  <Link
+                    href="/auth/signin"
                     className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 transition-colors duration-200"
                   >
                     Login
-                  </button>
-                  <button
-                    onClick={(e) => handleAuthAction('Register', e)}
-                    className="rounded-full bg-emerald-600 hover:bg-emerald-500 px-4 h-10 text-sm font-semibold text-white shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-200"
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="rounded-full bg-emerald-600 hover:bg-emerald-505 px-4 h-10 flex items-center justify-center text-sm font-semibold text-white shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-200"
                   >
                     Register
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -259,7 +263,11 @@ export default function Navbar() {
 
           {/* User profile & Auth Buttons at bottom */}
           <div className="absolute bottom-6 left-6 right-6 border-t border-zinc-100 dark:border-zinc-900 pt-6">
-            {user ? (
+            {isPending ? (
+              <div className="flex justify-center py-2">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-emerald-600" />
+              </div>
+            ) : user ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold">
@@ -271,7 +279,7 @@ export default function Navbar() {
                   </div>
                 </div>
                 <button
-                  onClick={(e) => handleAuthAction('Logout', e)}
+                  onClick={handleLogout}
                   className="flex w-full items-center justify-center rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 py-3 text-base font-semibold text-zinc-800 dark:text-zinc-200 transition-colors duration-200"
                 >
                   Logout
@@ -279,18 +287,20 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <button
-                  onClick={(e) => handleAuthAction('Login', e)}
+                <Link
+                  href="/auth/signin"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="flex w-full items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 py-3 text-base font-semibold text-zinc-800 dark:text-zinc-200 transition-colors duration-200"
                 >
                   Login
-                </button>
-                <button
-                  onClick={(e) => handleAuthAction('Register', e)}
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="flex w-full items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3 text-base font-semibold text-white shadow-md shadow-emerald-500/10 transition-colors duration-200"
                 >
                   Register
-                </button>
+                </Link>
               </div>
             )}
           </div>

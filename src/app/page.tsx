@@ -84,14 +84,14 @@ export default function Home() {
             <p className="mt-6 text-lg text-emerald-100 max-w-xl">
               Discover unique cabins, beachfront villas, alpine chalets, and cosy urban apartments tailored to your dream vacation.
             </p>
-            
+
             {/* Mock Search Bar */}
             <div className="mt-10 flex flex-col sm:flex-row gap-3 max-w-xl bg-white dark:bg-zinc-900 p-2.5 rounded-2xl shadow-xl border border-zinc-200/20">
               <div className="flex-1 px-4 py-2 flex flex-col justify-center text-left">
                 <span className="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500">Where</span>
-                <input 
-                  type="text" 
-                  placeholder="Search destinations..." 
+                <input
+                  type="text"
+                  placeholder="Search destinations..."
                   className="bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-50 border-none outline-none placeholder-zinc-400 mt-0.5"
                   disabled
                 />
@@ -111,7 +111,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        
+
         {/* Interactive Simulation Dashboard (Highlights the navbar functionality) */}
         <section className="mb-16 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 md:p-8 shadow-sm">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -160,7 +160,7 @@ export default function Home() {
                 Expected Navbar Items
               </span>
               <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                {user 
+                {user
                   ? 'Home • Explore • Add Property • Manage Properties • Profile • Logout'
                   : 'Home • Explore • About • Contact • Login • Register'
                 }
@@ -180,8 +180,8 @@ export default function Home() {
                 Explore our handpicked properties from around the globe.
               </p>
             </div>
-            <Link 
-              href="/explore" 
+            <Link
+              href="/explore"
               className="text-sm font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors duration-200"
             >
               View all explore listings &rarr;
@@ -202,7 +202,7 @@ export default function Home() {
                   />
                   <div className="absolute top-4 right-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-zinc-800 dark:text-zinc-200 shadow-sm flex items-center gap-1">
                     <svg className="w-3.5 h-3.5 fill-amber-400 stroke-none" viewBox="0 0 24 24">
-                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
                     {property.rating}
                   </div>
