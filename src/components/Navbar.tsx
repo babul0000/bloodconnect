@@ -36,7 +36,7 @@ export default function Navbar() {
   // Common links for both states
   const commonLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Explore', href: '/explore' },
+    { label: 'Explore Requests', href: '/explore' },
   ];
 
   // Links specific to logged-out state
@@ -47,8 +47,8 @@ export default function Navbar() {
 
   // Links specific to logged-in state
   const loggedInLinks = [
-    { label: 'Add Property', href: '/add-property' },
-    { label: 'Manage Properties', href: '/manage-properties' },
+    { label: 'Add Request', href: '/items/add' },
+    { label: 'Manage Requests', href: '/items/manage' },
     { label: 'Profile', href: '/profile' },
   ];
 
@@ -85,23 +85,22 @@ export default function Navbar() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2 group">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 group-hover:bg-emerald-500 transition-colors duration-300">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white shadow-md shadow-rose-500/20 group-hover:bg-rose-500 transition-colors duration-300">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
-                    fill="none"
+                    fill="currentColor"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="h-5.5 w-5.5"
+                    className="h-5 w-5 text-white"
                   >
-                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                   </svg>
                 </div>
                 <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  Stay<span className="text-emerald-600">Nest</span>
+                  Life<span className="text-rose-600">Flow</span>
                 </span>
               </Link>
             </div>
@@ -170,7 +169,7 @@ export default function Navbar() {
                 )}
               </button>
               {isPending ? (
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-emerald-600" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-rose-600" />
               ) : user ? (
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col text-right">
@@ -192,13 +191,13 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                   <Link
                     href="/auth/signin"
-                    className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 transition-colors duration-200"
+                    className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-400 px-3 py-2 transition-colors duration-200"
                   >
                     Login
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="rounded-full bg-emerald-600 hover:bg-emerald-505 px-4 h-10 flex items-center justify-center text-sm font-semibold text-white shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-200"
+                    className="rounded-full bg-rose-600 hover:bg-rose-500 px-4 h-10 flex items-center justify-center text-sm font-semibold text-white shadow-md shadow-rose-500/10 hover:shadow-rose-500/20 transition-all duration-200"
                   >
                     Register
                   </Link>
@@ -307,23 +306,22 @@ export default function Navbar() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4">
             <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-600 text-white shadow-sm">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  fill="none"
+                  fill="currentColor"
                   stroke="currentColor"
-                  strokeWidth="2.5"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-4.5 w-4.5"
+                  className="h-4.5 w-4.5 text-white"
                 >
-                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                 </svg>
               </div>
               <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                StayNest
+                Life<span className="text-rose-600">Flow</span>
               </span>
             </Link>
             <button
@@ -354,7 +352,7 @@ export default function Navbar() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center rounded-xl px-4 py-3 text-base font-medium transition-colors duration-200 ${
                     active
-                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 font-semibold'
+                      ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 font-semibold'
                       : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900/50'
                   }`}
                 >
@@ -368,12 +366,12 @@ export default function Navbar() {
           <div className="absolute bottom-6 left-6 right-6 border-t border-zinc-100 dark:border-zinc-900 pt-6">
             {isPending ? (
               <div className="flex justify-center py-2">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-emerald-600" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-rose-600" />
               </div>
             ) : user ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold">
+                  <div className="h-10 w-10 rounded-full bg-rose-100 dark:bg-rose-950 flex items-center justify-center text-rose-600 dark:text-rose-400 font-bold">
                     {user.name.charAt(0)}
                   </div>
                   <div className="flex flex-col">
@@ -400,7 +398,7 @@ export default function Navbar() {
                 <Link
                   href="/auth/signup"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex w-full items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3 text-base font-semibold text-white shadow-md shadow-emerald-500/10 transition-colors duration-200"
+                  className="flex w-full items-center justify-center rounded-xl bg-rose-600 hover:bg-rose-500 py-3 text-base font-semibold text-white shadow-md shadow-rose-500/10 transition-colors duration-200"
                 >
                   Register
                 </Link>
