@@ -131,7 +131,7 @@ export default function SignInPage() {
           {/* Submit Button */}
           <Button
             type="submit"
-            isLoading={isLoading}
+            isPending={isLoading}
             className="w-full bg-gradient-to-r from-[#7C3AED] to-[#38BDF8] text-white font-bold rounded-xl py-6 mt-4 shadow-[0_0_15px_rgba(124,58,237,0.2)] transition-transform active:scale-[0.99] cursor-pointer"
           >
             Sign In
@@ -152,7 +152,7 @@ export default function SignInPage() {
         <Button
           type="button"
           onClick={handleGoogleSignIn}
-          isLoading={isLoading}
+          isPending={isLoading}
           className="w-full bg-transparent border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-900 dark:text-white font-semibold rounded-xl py-6 flex items-center justify-center gap-2 cursor-pointer transition-all duration-300"
         >
           <svg className="w-5 h-5 mr-1" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
