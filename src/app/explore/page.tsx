@@ -29,11 +29,14 @@ export default function ExplorePage() {
   const [filteredRequests, setFilteredRequests] = useState<BloodRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   // Debounced search term (400ms delay)
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
@@ -53,8 +56,13 @@ export default function ExplorePage() {
     setIsLoading(true);
     try {
       const data = await fetchAllRequests();
-      setRequests(data);
-      setFilteredRequests(data);
+      const sorted = [...data].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      setRequests(sorted);
+      setFilteredRequests(sorted);
     } catch (err) {
       console.error('Error fetching explore requests:', err);
     } finally {
@@ -93,6 +101,7 @@ export default function ExplorePage() {
     }
 
     setFilteredRequests(results);
+    setCurrentPage(1);
   }, [debouncedSearchTerm, selectedBloodGroup, selectedUrgency, requests]);
 
   const handleReset = () => {
@@ -100,6 +109,11 @@ export default function ExplorePage() {
     setSelectedBloodGroup('');
     setSelectedUrgency('');
   };
+
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors duration-300">
@@ -216,165 +230,99 @@ export default function ExplorePage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-              {filteredRequests.map((request) => (
-                <div key={request._id} className="group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                  
-                  {/* Decorative Blood Type Badge Circle */}
-                  <div className="aspect-[4/2] w-full bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center relative border-b border-zinc-100 dark:border-zinc-800">
-                    <div className="h-20 w-20 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center shadow-lg shadow-rose-500/20 group-hover:scale-105 transition-transform duration-300">
-                      <span className="text-3xl font-black tracking-tight">{request.bloodGroup}</span>
+            <>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+                {currentRequests.map((request) => (
+                  <div key={request._id} className="group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    
+                    {/* Decorative Blood Type Badge Circle */}
+                    <div className="aspect-[4/2] w-full bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center relative border-b border-zinc-100 dark:border-zinc-800">
+                      <div className="h-20 w-20 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center shadow-lg shadow-rose-500/20 group-hover:scale-105 transition-transform duration-300">
+                        <span className="text-3xl font-black tracking-tight">{request.bloodGroup}</span>
+                      </div>
+                      {request.urgencyLevel === 'Urgent' ? (
+                        <span className="absolute top-4 right-4 bg-rose-500/10 text-rose-655 dark:text-rose-400 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                          <span className="inline-block h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></span> Urgent
+                        </span>
+                      ) : (
+                        <span className="absolute top-4 right-4 bg-zinc-100 text-zinc-660 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-1 rounded-full text-xs font-semibold">
+                          Normal
+                        </span>
+                      )}
                     </div>
-                    {request.urgencyLevel === 'Urgent' ? (
-                      <span className="absolute top-4 right-4 bg-rose-500/10 text-rose-650 dark:text-rose-400 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                        <span className="inline-block h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></span> Urgent
+
+                    {/* Details */}
+                    <div className="flex flex-1 flex-col p-6">
+                      <span className="text-xs font-semibold text-rose-600 dark:text-rose-455 uppercase tracking-wide flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5" /> Patient: {request.patientName}
                       </span>
-                    ) : (
-                      <span className="absolute top-4 right-4 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-1 rounded-full text-xs font-semibold">
-                        Normal
-                      </span>
-                    )}
+                      <h3 className="mt-2 text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">
+                        <Landmark className="w-4 h-4 text-zinc-400 shrink-0" />
+                        <span className="truncate">{request.hospitalName}</span>
+                      </h3>
+                      <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-zinc-400" /> {request.location}
+                      </p>
+                      
+                      <div className="mt-6 flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                        <Link
+                          href={`/requests/${request._id}`}
+                          className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-855 dark:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer text-center flex items-center justify-center"
+                        >
+                          View Details
+                        </Link>
+                        <a
+                          href={`tel:${request.contactNumber}`}
+                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border border-rose-600 shadow-md shadow-rose-500/10 text-center"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> Call
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex items-center justify-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:border-rose-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-zinc-200 dark:disabled:hover:border-zinc-800 transition-all cursor-pointer"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`h-9 w-9 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          currentPage === page
+                            ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-105 border border-rose-505'
+                            : 'border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-750 dark:text-zinc-300 hover:border-rose-505'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Details */}
-                  <div className="flex flex-1 flex-col p-6">
-                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-455 uppercase tracking-wide flex items-center gap-1">
-                      <Award className="w-3.5 h-3.5" /> Patient: {request.patientName}
-                    </span>
-                    <h3 className="mt-2 text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">
-                      <Landmark className="w-4 h-4 text-zinc-400 shrink-0" />
-                      <span className="truncate">{request.hospitalName}</span>
-                    </h3>
-                    <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                      <MapPin className="w-4 h-4 text-zinc-400" /> {request.location}
-                    </p>
-                    
-                    <div className="mt-6 flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-                      <button
-                        onClick={() => setSelectedRequest(request)}
-                        className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer text-center"
-                      >
-                        View Details
-                      </button>
-                      <a
-                        href={`tel:${request.contactNumber}`}
-                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border border-rose-600 shadow-md shadow-rose-500/10 text-center"
-                      >
-                        <Phone className="w-3.5 h-3.5" /> Call
-                      </a>
-                    </div>
-                  </div>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:border-rose-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-zinc-200 dark:disabled:hover:border-zinc-800 transition-all cursor-pointer"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
       </div>
-
-      {/* Details Modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden text-left transition-all">
-            <button
-              onClick={() => setSelectedRequest(null)}
-              className="absolute top-4 right-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-full p-2 transition-colors cursor-pointer border-none"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center shadow-lg shadow-rose-500/20 shrink-0">
-                <span className="text-2xl font-black">{selectedRequest.bloodGroup}</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-                  Required Blood Group: {selectedRequest.bloodGroup}
-                </h3>
-                <div className="flex gap-2 mt-1">
-                  {selectedRequest.urgencyLevel === 'Urgent' ? (
-                    <span className="bg-rose-500/10 text-rose-600 dark:text-rose-455 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                      <span className="inline-block h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></span> Urgent
-                    </span>
-                  ) : (
-                    <span className="bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                      Normal
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Case Image */}
-            {selectedRequest.imageUrl ? (
-              <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 aspect-video bg-zinc-50 dark:bg-zinc-955 flex items-center justify-center">
-                <img
-                  src={selectedRequest.imageUrl}
-                  alt={`${selectedRequest.patientName}'s Case`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="mb-6 rounded-2xl p-6 border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col items-center justify-center text-center">
-                <ImageIcon className="w-10 h-10 text-zinc-300 dark:text-zinc-700 mb-2" />
-                <p className="text-xs text-zinc-450 dark:text-zinc-500">No medical case image uploaded by requester</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Patient Name</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.patientName}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Contact Number</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.contactNumber}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Hospital</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.hospitalName}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Location</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.location}</p>
-                </div>
-              </div>
-
-              <div className="pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Requester Email</span>
-                <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{selectedRequest.email}</p>
-              </div>
-
-              {selectedRequest.createdAt && (
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Posted On</span>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {new Date(selectedRequest.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer border-none"
-              >
-                Close
-              </button>
-              <a
-                href={`tel:${selectedRequest.contactNumber}`}
-                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/20 text-center"
-              >
-                <Phone className="w-4 h-4" /> Call Coordinator
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

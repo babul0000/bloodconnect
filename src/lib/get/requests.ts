@@ -16,3 +16,11 @@ export async function fetchUserRequests(email: string): Promise<BloodRequest[]> 
   }
   return res.json();
 }
+
+export async function fetchRequestById(id: string): Promise<BloodRequest> {
+  const res = await fetch(`${API_URL}/api/requests/${id}`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch blood request details');
+  }
+  return res.json();
+}

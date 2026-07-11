@@ -24,6 +24,7 @@ export default function Home() {
   const [totalDonors, setTotalDonors] = useState(0);
   const [totalRequests, setTotalRequests] = useState(0);
   const [citiesCount, setCitiesCount] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const fetchStats = async (requestsData: BloodRequest[]) => {
     try {
@@ -58,9 +59,14 @@ export default function Home() {
     setIsLoading(true);
     try {
       const data = await fetchAllRequests();
-      setRequests(data);
-      setFilteredRequests(data);
-      await fetchStats(data);
+      const sorted = [...data].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      setRequests(sorted);
+      setFilteredRequests(sorted);
+      await fetchStats(sorted);
     } catch (err) {
       console.error('Error fetching requests:', err);
     } finally {
@@ -297,7 +303,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-              {filteredRequests.map((request) => (
+              {filteredRequests.slice(0, 6).map((request) => (
                 <div key={request._id} className="group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   
                   {/* Decorative Blood Type Badge Circle */}
@@ -330,12 +336,12 @@ export default function Home() {
                     </p>
                     
                     <div className="mt-6 flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-                      <button
-                        onClick={() => setSelectedRequest(request)}
-                        className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer text-center"
+                      <Link
+                        href={`/requests/${request._id}`}
+                        className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer text-center flex items-center justify-center"
                       >
                         View Details
-                      </button>
+                      </Link>
                       <a
                         href={`tel:${request.contactNumber}`}
                         className="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border border-rose-600 shadow-md shadow-rose-500/10 text-center"
@@ -642,7 +648,7 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-500 block mb-3">Legal & Terms</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-550 block mb-3">Legal & Terms</span>
               <div className="flex flex-col gap-2">
                 <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Privacy Policy</Link>
                 <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Terms of Service</Link>
@@ -654,111 +660,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* Details Modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden text-left transition-all">
-            <button
-              onClick={() => setSelectedRequest(null)}
-              className="absolute top-4 right-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-full p-2 transition-colors cursor-pointer border-none"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center shadow-lg shadow-rose-500/20 shrink-0">
-                <span className="text-2xl font-black">{selectedRequest.bloodGroup}</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-                  Required Blood Group: {selectedRequest.bloodGroup}
-                </h3>
-                <div className="flex gap-2 mt-1">
-                  {selectedRequest.urgencyLevel === 'Urgent' ? (
-                    <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                      <span className="inline-block h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></span> Urgent
-                    </span>
-                  ) : (
-                    <span className="bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                      Normal
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Case Image */}
-            {selectedRequest.imageUrl ? (
-              <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 aspect-video bg-zinc-50 dark:bg-zinc-955 flex items-center justify-center">
-                <img
-                  src={selectedRequest.imageUrl}
-                  alt={`${selectedRequest.patientName}'s Case`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="mb-6 rounded-2xl p-6 border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col items-center justify-center text-center">
-                <ImageIcon className="w-10 h-10 text-zinc-300 dark:text-zinc-700 mb-2" />
-                <p className="text-xs text-zinc-450 dark:text-zinc-500">No medical case image uploaded by requester</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Patient Name</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.patientName}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Contact Number</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.contactNumber}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Hospital</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.hospitalName}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Location</span>
-                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.location}</p>
-                </div>
-              </div>
-
-              <div className="pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
-                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Requester Email</span>
-                <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{selectedRequest.email}</p>
-              </div>
-
-              {selectedRequest.createdAt && (
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Posted On</span>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {new Date(selectedRequest.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer border-none"
-              >
-                Close
-              </button>
-              <a
-                href={`tel:${selectedRequest.contactNumber}`}
-                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/20 text-center"
-              >
-                <Phone className="w-4 h-4" /> Call Coordinator
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
