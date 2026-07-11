@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, authClient } from '@/lib/auth-client';
-import { ChevronDown, User, Activity, LogOut } from 'lucide-react';
+import { ChevronDown, User, Activity, LogOut, ShieldCheck, Settings } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -60,6 +60,13 @@ export default function Navbar() {
     { label: 'Manage Requests', href: '/items/manage' },
     { label: 'Profile', href: '/profile' },
   ];
+
+  if (user?.role === 'admin') {
+    loggedInLinks.push({ label: 'Admin Dashboard', href: '/admin' });
+    loggedInLinks.push({ label: 'Manage Donors', href: '/manage-donors' });
+  } else if (user?.role === 'creator') {
+    loggedInLinks.push({ label: 'Manage Donors', href: '/manage-donors' });
+  }
 
   // Dynamic lists based on authentication state
   const mainLinks = user 
@@ -185,8 +192,12 @@ export default function Navbar() {
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center gap-3 focus:outline-none cursor-pointer group p-1.5 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all duration-200 border-none bg-transparent"
                   >
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-rose-500/25 border border-rose-400 group-hover:scale-105 transition-transform duration-200">
-                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-rose-500/25 border border-rose-400 group-hover:scale-105 transition-transform duration-200 overflow-hidden">
+                      {user.image ? (
+                        <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
+                      ) : (
+                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                      )}
                     </div>
                     <div className="hidden lg:flex flex-col text-left">
                       <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 leading-tight group-hover:text-rose-600 dark:group-hover:text-rose-455 transition-colors">
@@ -200,10 +211,14 @@ export default function Navbar() {
                   </button>
 
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2.5 w-60 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl animate-scale-up z-50">
+                    <div className="absolute right-0 mt-2.5 w-60 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-955 p-4 shadow-xl animate-scale-up z-50">
                       <div className="flex items-center gap-3 pb-3 border-b border-zinc-150 dark:border-zinc-850">
-                        <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-655 dark:text-rose-450 flex items-center justify-center font-bold text-base shadow-inner">
-                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        <div className="h-10 w-10 rounded-xl bg-rose-505/10 text-rose-655 dark:text-rose-450 flex items-center justify-center font-bold text-base shadow-inner overflow-hidden">
+                          {user.image ? (
+                            <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
+                          ) : (
+                            user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                          )}
                         </div>
                         <div className="flex flex-col text-left overflow-hidden">
                           <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{user.name}</span>
@@ -226,6 +241,24 @@ export default function Navbar() {
                         >
                           <Activity className="w-4 h-4 text-zinc-455" /> Manage Requests
                         </Link>
+                        {user?.role === 'admin' && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 hover:text-rose-600 dark:hover:text-rose-450 transition-all duration-150"
+                          >
+                            <Settings className="w-4 h-4 text-zinc-455" /> Admin Console
+                          </Link>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'creator') && (
+                          <Link
+                            href="/manage-donors"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 hover:text-rose-600 dark:hover:text-rose-450 transition-all duration-150"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-zinc-455" /> Manage Donors
+                          </Link>
+                        )}
                       </div>
 
                       <div className="pt-2 border-t border-zinc-150 dark:border-zinc-850">

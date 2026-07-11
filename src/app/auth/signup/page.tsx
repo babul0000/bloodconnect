@@ -4,7 +4,7 @@ import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, User, Mail, Lock, Image as ImageIcon } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Image as ImageIcon, Heart, Phone } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -17,6 +17,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("O+");
+  const [contactNumber, setContactNumber] = useState("");
   const [role, setRole] = useState("user");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -35,7 +37,10 @@ export default function SignUpPage() {
       password: password,
       image: image || "",
       role: role,
-      plan: "free",
+      bloodGroup: bloodGroup,
+      contactNumber: contactNumber || "",
+      lastDonationDate: "",
+      medicalEligibility: true,
     };
 
     console.log("Submitting User Data to Better-Auth:", userData);
@@ -198,6 +203,49 @@ export default function SignUpPage() {
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-transparent text-zinc-905 dark:text-white text-sm outline-none focus:border-rose-500 dark:focus:border-rose-500 transition-all placeholder-zinc-400 dark:placeholder-zinc-500"
                 value={image}
                 onChange={(e) => setImage(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Blood Group Select Dropdown */}
+          <div className="space-y-1 text-left">
+            <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Blood Group</label>
+            <div className="relative">
+              <Heart className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
+              <select
+                required
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-500 dark:focus:border-rose-500 transition-all cursor-pointer appearance-none"
+                value={bloodGroup}
+                onChange={(e) => setBloodGroup(e.target.value)}
+              >
+                <option value="A+" className="text-zinc-900 dark:bg-zinc-900">A+</option>
+                <option value="A-" className="text-zinc-900 dark:bg-zinc-900">A-</option>
+                <option value="B+" className="text-zinc-900 dark:bg-zinc-900">B+</option>
+                <option value="B-" className="text-zinc-900 dark:bg-zinc-900">B-</option>
+                <option value="O+" className="text-zinc-900 dark:bg-zinc-900">O+</option>
+                <option value="O-" className="text-zinc-900 dark:bg-zinc-900">O-</option>
+                <option value="AB+" className="text-zinc-900 dark:bg-zinc-900">AB+</option>
+                <option value="AB-" className="text-zinc-900 dark:bg-zinc-900">AB-</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Number Input */}
+          <div className="space-y-1 text-left">
+            <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Contact Number (Optional)</label>
+            <div className="relative">
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
+              <input
+                type="tel"
+                placeholder="e.g. 01953869054"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-500 dark:focus:border-rose-500 transition-all placeholder-zinc-400 dark:placeholder-zinc-500"
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
               />
             </div>
           </div>

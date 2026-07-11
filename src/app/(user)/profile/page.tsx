@@ -130,8 +130,12 @@ export default function ProfilePage() {
 
                 {/* Avatar Badge */}
                 <div className="relative mt-4">
-                  <div className="h-24 w-24 rounded-full bg-gradient-to-br from-rose-500 to-red-600 text-white font-black text-3xl flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-105 transition-transform duration-300 select-none">
-                    {getInitials(name || user.name || '')}
+                  <div className="h-24 w-24 rounded-full bg-gradient-to-br from-rose-500 to-red-600 text-white font-black text-3xl flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-105 transition-transform duration-300 select-none overflow-hidden">
+                    {user.image ? (
+                      <img src={user.image} alt={name || user.name || 'User'} className="h-full w-full object-cover" />
+                    ) : (
+                      getInitials(name || user.name || '')
+                    )}
                   </div>
                   <span className={`absolute bottom-1 right-1 h-4.5 w-4.5 rounded-full border-3 border-white dark:border-zinc-900 ${
                     medicalEligibility === 'Eligible' ? 'bg-emerald-500' : medicalEligibility === 'Ineligible' ? 'bg-rose-500' : 'bg-amber-500'
@@ -139,7 +143,18 @@ export default function ProfilePage() {
                 </div>
 
                 <h3 className="mt-5 text-xl font-bold text-zinc-900 dark:text-zinc-50">{name || user.name || 'User'}</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-450 mt-1">{user.email}</p>
+                <div className="mt-1.5 flex items-center justify-center">
+                  <span className={`inline-block px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full border ${
+                    user.role === 'admin' 
+                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-455' 
+                      : user.role === 'creator'
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-455'
+                      : 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+                  }`}>
+                    {user.role || 'user'}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-450 mt-2">{user.email}</p>
 
                 {/* Info Badges Grid */}
                 <div className="mt-8 w-full grid grid-cols-2 gap-3 pt-6 border-t border-zinc-100 dark:border-zinc-800">
