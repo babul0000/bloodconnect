@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from '@/lib/auth-client';
 import { z } from 'zod';
-import { Heart, User, MapPin, ArrowLeft, Landmark, AlertCircle, Phone } from 'lucide-react';
+import { Heart, User, MapPin, ArrowLeft, Landmark, AlertCircle, Phone, X, Image as ImageIcon } from 'lucide-react';
+import { createRequest } from '@/lib/post/requests';
+import { uploadImageToImgBB } from '@/lib/upload';
 
 // Define Zod validation schema
 const requestSchema = z.object({
@@ -33,6 +35,8 @@ export default function AddRequestPage() {
   const [location, setLocation] = useState('');
   const [urgencyLevel, setUrgencyLevel] = useState<'Urgent' | 'Normal'>('Normal');
   const [contactNumber, setContactNumber] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,30 +88,23 @@ export default function AddRequestPage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/requests`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          email: user.email,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setSuccessMsg('Blood request posted successfully!');
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
-      } else {
-        setApiError(data.error || 'Failed to post request. Please try again.');
+      let uploadedImageUrl = '';
+      if (imageFile) {
+        uploadedImageUrl = await uploadImageToImgBB(imageFile);
       }
-    } catch (err) {
+
+      await createRequest({
+        ...formData,
+        email: user.email,
+        imageUrl: uploadedImageUrl,
+      });
+      setSuccessMsg('Blood request posted successfully!');
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+    } catch (err: any) {
       console.error('Error posting request:', err);
-      setApiError('Backend server connection failed. Please verify the server is running.');
+      setApiError(err.message || 'Failed to post request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -243,6 +240,49 @@ export default function AddRequestPage() {
               />
             </div>
             {errors.contactNumber && <p className="text-xs text-rose-600 dark:text-rose-400 font-bold mt-1">{errors.contactNumber}</p>}
+          </div>
+
+          {/* Patient Image / Diagnostic Report Image */}
+          <div className="space-y-1 text-left">
+            <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Patient / Case Image</label>
+            <div className="relative flex flex-col gap-2">
+              <div className={`w-full border border-dashed rounded-xl p-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-transparent ${
+                imagePreview ? 'border-rose-500/50' : 'border-zinc-200 dark:border-zinc-800'
+              }`}>
+                {imagePreview ? (
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden border border-zinc-205 dark:border-zinc-800 flex items-center justify-center">
+                    <img src={imagePreview} alt="Preview" className="h-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 shadow-md transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center cursor-pointer py-4 w-full">
+                    <ImageIcon className="w-8 h-8 text-zinc-400 mb-2" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">Click to upload image (Optional)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setImageFile(file);
+                          setImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Urgency Level Toggle/Selector */}

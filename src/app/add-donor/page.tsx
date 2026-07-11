@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, User, MapPin, ArrowLeft } from 'lucide-react';
+import { registerDonor } from '@/lib/post/donors';
 
 export default function AddDonorPage() {
   const router = useRouter();
@@ -27,28 +28,14 @@ export default function AddDonorPage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/donors`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, bloodType, location }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage('Successfully registered as a donor!');
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
-      } else {
-        setError(data.error || 'Failed to register. Please try again.');
-      }
-    } catch (err) {
+      await registerDonor({ name, bloodType, location });
+      setMessage('Successfully registered as a donor!');
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+    } catch (err: any) {
       console.error('Error adding donor:', err);
-      setError('Something went wrong. Please check your backend connection.');
+      setError(err.message || 'Something went wrong. Please check your backend connection.');
     } finally {
       setIsSubmitting(false);
     }

@@ -3,20 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/auth-client';
-import { Heart, Trash2, Edit, AlertCircle, ArrowLeft, RefreshCw, Landmark, MapPin, Phone, User, Check, X } from 'lucide-react';
+import { Heart, Trash2, Edit, AlertCircle, ArrowLeft, RefreshCw, Landmark, MapPin, Phone, User, Check, X, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 
-interface BloodRequest {
-  _id: string;
-  patientName: string;
-  bloodGroup: string;
-  hospitalName: string;
-  location: string;
-  urgencyLevel: string;
-  contactNumber: string;
-  email: string;
-  createdAt?: string;
-}
+import { BloodRequest } from '@/lib/types';
+import { fetchUserRequests as fetchUserRequestsLib } from '@/lib/get/requests';
+import { updateRequest, deleteRequest } from '@/lib/post/requests';
+import { uploadImageToImgBB } from '@/lib/upload';
 
 // Zod schema for editing
 const requestSchema = z.object({
@@ -36,6 +29,7 @@ export default function ManageRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Edit Modal State
   const [editingRequest, setEditingRequest] = useState<BloodRequest | null>(null);
@@ -45,6 +39,9 @@ export default function ManageRequestsPage() {
   const [editLocation, setEditLocation] = useState('');
   const [editUrgencyLevel, setEditUrgencyLevel] = useState<'Urgent' | 'Normal'>('Normal');
   const [editContactNumber, setEditContactNumber] = useState('');
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -61,14 +58,8 @@ export default function ManageRequestsPage() {
     setIsLoading(true);
     setError('');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/requests?email=${encodeURIComponent(user.email)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data);
-      } else {
-        setError('Failed to fetch your blood requests.');
-      }
+      const data = await fetchUserRequestsLib(user.email);
+      setRequests(data);
     } catch (err) {
       console.error('Error fetching user requests:', err);
       setError('Backend connection error. Please verify the server is running.');
@@ -82,20 +73,11 @@ export default function ManageRequestsPage() {
   }, [user]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this blood request?')) {
-      return;
-    }
     setDeletingId(id);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/requests/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok || res.status === 204) {
-        setRequests(requests.filter(req => req._id !== id));
-      } else {
-        alert('Failed to delete blood request.');
-      }
+      await deleteRequest(id);
+      setRequests(requests.filter(req => req._id !== id));
+      setDeleteConfirmId(null);
     } catch (err) {
       console.error('Error deleting request:', err);
       alert('Error connecting to backend server.');
@@ -112,6 +94,9 @@ export default function ManageRequestsPage() {
     setEditLocation(req.location);
     setEditUrgencyLevel(req.urgencyLevel as any);
     setEditContactNumber(req.contactNumber);
+    setEditImageUrl(req.imageUrl || '');
+    setEditImagePreview(req.imageUrl || null);
+    setEditImageFile(null);
     setEditErrors({});
   };
 
@@ -148,27 +133,24 @@ export default function ManageRequestsPage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/requests/${editingRequest._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        setRequests(requests.map(req => 
-          req._id === editingRequest._id ? { ...req, ...formData } : req
-        ));
-        closeEditModal();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to update request.');
+      let finalImageUrl = editImageUrl;
+      if (editImageFile) {
+        finalImageUrl = await uploadImageToImgBB(editImageFile);
       }
-    } catch (err) {
+
+      const updateData = {
+        ...formData,
+        imageUrl: finalImageUrl,
+      };
+
+      await updateRequest(editingRequest._id, updateData);
+      setRequests(requests.map(req => 
+        req._id === editingRequest._id ? { ...req, ...updateData } : req
+      ));
+      closeEditModal();
+    } catch (err: any) {
       console.error('Error updating request:', err);
-      alert('Error connecting to backend server.');
+      alert(err.message || 'Error connecting to backend server.');
     } finally {
       setIsUpdating(false);
     }
@@ -291,9 +273,9 @@ export default function ManageRequestsPage() {
                             <Edit className="w-3.5 h-3.5" /> Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(request._id)}
+                            onClick={() => setDeleteConfirmId(request._id)}
                             disabled={deletingId === request._id}
-                            className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-955/40 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all border border-rose-200/30 dark:border-rose-900/20 cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-955/20 dark:hover:bg-rose-955/40 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all border border-rose-200/30 dark:border-rose-900/20 cursor-pointer disabled:opacity-50"
                           >
                             {deletingId === request._id ? (
                               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
@@ -419,6 +401,50 @@ export default function ManageRequestsPage() {
                 {editErrors.contactNumber && <p className="text-xs text-rose-600 font-bold mt-1">{editErrors.contactNumber}</p>}
               </div>
 
+              {/* Patient / Case Image */}
+              <div className="space-y-1 text-left">
+                <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Patient / Case Image</label>
+                <div className="relative flex flex-col gap-2">
+                  <div className={`w-full border border-dashed rounded-xl p-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-transparent ${
+                    editImagePreview ? 'border-rose-500/50' : 'border-zinc-200 dark:border-zinc-800'
+                  }`}>
+                    {editImagePreview ? (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
+                        <img src={editImagePreview} alt="Preview" className="h-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditImageFile(null);
+                            setEditImageUrl('');
+                            setEditImagePreview(null);
+                          }}
+                          className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 shadow-md transition-colors cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center cursor-pointer py-4 w-full">
+                        <ImageIcon className="w-8 h-8 text-zinc-400 mb-2" />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">Click to upload new image (Optional)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setEditImageFile(file);
+                              setEditImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Urgency Level */}
               <div className="space-y-2 text-left pt-1">
                 <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Urgency Level</label>
@@ -472,6 +498,46 @@ export default function ManageRequestsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 mb-4 animate-bounce">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2">
+              Confirm Deletion
+            </h3>
+            
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+              Are you sure you want to delete this blood request? This action is permanent and cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 cursor-pointer border-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(deleteConfirmId)}
+                disabled={deletingId === deleteConfirmId}
+                className="flex-1 bg-rose-600 hover:bg-rose-505 text-white font-bold py-2.5 rounded-xl text-sm transition-all duration-200 shadow-md shadow-rose-500/20 active:scale-[0.99] cursor-pointer border-none flex items-center justify-center gap-1.5"
+              >
+                {deletingId === deleteConfirmId ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-200 border-t-transparent" />
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

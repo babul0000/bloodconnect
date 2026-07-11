@@ -4,39 +4,63 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
-import { Heart, Search, MapPin, Phone, Award, Shield, User, Landmark, AlertCircle } from 'lucide-react';
+import { Heart, Search, MapPin, Phone, Award, Shield, User, Landmark, AlertCircle, X, Image as ImageIcon } from 'lucide-react';
 
-interface BloodRequest {
-  _id: string;
-  patientName: string;
-  bloodGroup: string;
-  hospitalName: string;
-  location: string;
-  urgencyLevel: string; // 'Urgent' | 'Normal'
-  contactNumber: string;
-  email: string;
-  createdAt?: string;
-}
+import { BloodRequest } from '@/lib/types';
+import { fetchAllRequests } from '@/lib/get/requests';
+import { fetchAllDonors } from '@/lib/get/donors';
 
 export default function Home() {
   const { user, login, logout } = useAuth();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<BloodRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
   const [searchBloodType, setSearchBloodType] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
 
-  // Fetch requests from backend
+  const [totalDonors, setTotalDonors] = useState(0);
+  const [totalRequests, setTotalRequests] = useState(0);
+  const [citiesCount, setCitiesCount] = useState(0);
+
+  const fetchStats = async (requestsData: BloodRequest[]) => {
+    try {
+      const donorsData = await fetchAllDonors();
+      setTotalDonors(donorsData.length);
+      setTotalRequests(requestsData.length);
+      
+      const uniqueCities = new Set<string>();
+      requestsData.forEach(r => {
+        if (r.location) {
+          const parts = r.location.split(',');
+          const city = parts[parts.length - 1].trim();
+          if (city) uniqueCities.add(city.toLowerCase());
+        }
+      });
+      donorsData.forEach(d => {
+        if (d.location) {
+          const parts = d.location.split(',');
+          const city = parts[parts.length - 1].trim();
+          if (city) uniqueCities.add(city.toLowerCase());
+        }
+      });
+      
+      setCitiesCount(uniqueCities.size || 3);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  // Fetch requests from backend using our lib API helper
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/requests`);
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data);
-        setFilteredRequests(data);
-      }
+      const data = await fetchAllRequests();
+      setRequests(data);
+      setFilteredRequests(data);
+      await fetchStats(data);
     } catch (err) {
       console.error('Error fetching requests:', err);
     } finally {
@@ -215,8 +239,32 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Categories / Blood Groups Quick Filter */}
+        <section className="mb-16">
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 text-left">Quick Search by Blood Group</h3>
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+            {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((group) => (
+              <button
+                key={group}
+                onClick={() => {
+                  setSearchBloodType(group);
+                  // Scroll to grid
+                  document.getElementById('requests-grid')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`py-3 rounded-2xl text-sm font-bold border transition-all cursor-pointer ${
+                  searchBloodType === group
+                    ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-500/20 scale-105'
+                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 hover:border-rose-500'
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Requests Grid Section */}
-        <section>
+        <section id="requests-grid">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 mb-8">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
@@ -281,12 +329,18 @@ export default function Home() {
                       <MapPin className="w-4 h-4 text-zinc-400" /> {request.location}
                     </p>
                     
-                    <div className="mt-6 flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                    <div className="mt-6 flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                      <button
+                        onClick={() => setSelectedRequest(request)}
+                        className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer text-center"
+                      >
+                        View Details
+                      </button>
                       <a
                         href={`tel:${request.contactNumber}`}
-                        className="w-full bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-rose-600 shadow-md shadow-rose-500/10 text-center"
+                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border border-rose-600 shadow-md shadow-rose-500/10 text-center"
                       >
-                        <Phone className="w-4 h-4" /> Call: {request.contactNumber}
+                        <Phone className="w-3.5 h-3.5" /> Call
                       </a>
                     </div>
                   </div>
@@ -295,14 +349,416 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* How It Works */}
+        <section className="mb-24 py-12 border-t border-zinc-100 dark:border-zinc-800/50 text-center">
+          <div className="max-w-3xl mx-auto mb-16">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+              Simple 3-Step Process
+            </h2>
+            <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-2 leading-relaxed">
+              LifeFlow makes blood donation seamless and accessible in critical moments.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex flex-col items-center">
+              <div className="h-14 w-14 rounded-2xl bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-455 flex items-center justify-center font-bold text-lg mb-4 shadow-sm">
+                1
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">Register</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                Join our network as a donor or patient to begin sharing requests and saving lives.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="h-14 w-14 rounded-2xl bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-455 flex items-center justify-center font-bold text-lg mb-4 shadow-sm">
+                2
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">Search or Post</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                Patients post urgent requirements or find local donors. Donors browse the active list.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="h-14 w-14 rounded-2xl bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-455 flex items-center justify-center font-bold text-lg mb-4 shadow-sm">
+                3
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">Connect</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                Get in touch directly through phone lines and coordinate details immediately.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Statistics / Impact Dashboard */}
+        <section className="mb-24 py-12 border-t border-zinc-100 dark:border-zinc-800/50">
+          <div className="max-w-3xl mx-auto mb-16 text-center">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+              Our Community Impact
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+              LifeFlow's growing community statistics and successful connection charts.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Stats list */}
+            <div className="lg:col-span-5 grid grid-cols-1 gap-6">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 shadow-sm flex items-center gap-4 text-left">
+                <div className="h-12 w-12 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <Heart className="w-5 h-5 fill-rose-600/10" />
+                </div>
+                <div>
+                  <span className="text-2xl font-black text-zinc-900 dark:text-white block">{totalRequests}</span>
+                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 block uppercase tracking-wider">Blood Requests Raised</span>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 shadow-sm flex items-center gap-4 text-left">
+                <div className="h-12 w-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center shrink-0">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-2xl font-black text-zinc-900 dark:text-white block">{totalDonors}</span>
+                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 block uppercase tracking-wider">Active Registered Donors</span>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 shadow-sm flex items-center gap-4 text-left">
+                <div className="h-12 w-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-450 flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-2xl font-black text-zinc-900 dark:text-white block">{citiesCount} Cities</span>
+                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 block uppercase tracking-wider">Active Cities Covered</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Custom SVG Dashboard Chart */}
+            <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm text-left relative overflow-hidden">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-500 mb-4 block">Monthly Successful Connections (Monthly Trend)</span>
+              
+              <div className="relative h-64 w-full">
+                <svg className="w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
+                  <line x1="0" y1="50" x2="500" y2="50" stroke="#f1f5f9" strokeWidth="1" className="dark:stroke-zinc-800/60" />
+                  <line x1="0" y1="100" x2="500" y2="100" stroke="#f1f5f9" strokeWidth="1" className="dark:stroke-zinc-800/60" />
+                  <line x1="0" y1="150" x2="500" y2="150" stroke="#f1f5f9" strokeWidth="1" className="dark:stroke-zinc-800/60" />
+                  
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#e11d48" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#e11d48" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path
+                    d="M 0 180 Q 80 140 160 110 T 320 80 T 420 50 L 500 30 L 500 200 L 0 200 Z"
+                    fill="url(#chartGrad)"
+                  />
+                  
+                  <path
+                    d="M 0 180 Q 80 140 160 110 T 320 80 T 420 50 L 500 30"
+                    fill="none"
+                    stroke="#e11d48"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                  
+                  <circle cx="160" cy="110" r="5.5" fill="#e11d48" stroke="#ffffff" strokeWidth="2.5" className="dark:stroke-zinc-900" />
+                  <circle cx="320" cy="80" r="5.5" fill="#e11d48" stroke="#ffffff" strokeWidth="2.5" className="dark:stroke-zinc-900" />
+                  <circle cx="420" cy="50" r="5.5" fill="#e11d48" stroke="#ffffff" strokeWidth="2.5" className="dark:stroke-zinc-900" />
+                </svg>
+              </div>
+              
+              <div className="flex justify-between items-center text-[10px] font-bold text-zinc-400 mt-2 px-1">
+                <span>Jan</span>
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
+                <span>Jun</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials / Success Stories */}
+        <section className="mb-24 py-12 border-t border-zinc-100 dark:border-zinc-800/50">
+          <div className="max-w-3xl mx-auto mb-16 text-center">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+              Donor Success Stories
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">
+              Read how LifeFlow helped connect donors to critical cases in minutes.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-6 md:p-8 shadow-sm text-left relative">
+              <span className="text-4xl text-rose-500/10 font-serif absolute top-4 left-6">“</span>
+              <p className="text-sm text-zinc-600 dark:text-zinc-300 relative z-10 leading-relaxed font-medium">
+                My father needed B- blood urgently at Dhaka Medical. I posted a request here, and within 15 minutes, two donors got in touch. One came immediately. It was a true lifesaver.
+              </p>
+              <div className="flex items-center gap-3 mt-6">
+                <div className="h-10 w-10 rounded-full bg-rose-100 dark:bg-rose-955 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">
+                  RH
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Rahim Hasan</h4>
+                  <p className="text-[10px] font-bold text-zinc-400 block uppercase">Recipient Son, Dhaka</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-6 md:p-8 shadow-sm text-left relative">
+              <span className="text-4xl text-rose-500/10 font-serif absolute top-4 left-6">“</span>
+              <p className="text-sm text-zinc-600 dark:text-zinc-300 relative z-10 leading-relaxed font-medium">
+                I was always hesitant to register, but LifeFlow made it extremely simple. Registering as a donor was quick, and I have already made one successful blood donation last month. Highly recommended!
+              </p>
+              <div className="flex items-center gap-3 mt-6">
+                <div className="h-10 w-10 rounded-full bg-rose-100 dark:bg-rose-955 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">
+                  AS
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Anika Sen</h4>
+                  <p className="text-[10px] font-bold text-zinc-400 block uppercase">Registered Donor, Sylhet</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="mb-24 py-12 border-t border-zinc-100 dark:border-zinc-800/50">
+          <div className="max-w-3xl mx-auto mb-16 text-center">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">
+              Quick answers to basic queries about donation eligibility and safety.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-4 text-left">
+            <details className="group bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 cursor-pointer outline-none">
+              <summary className="flex items-center justify-between font-bold text-zinc-800 dark:text-zinc-200 text-sm md:text-base select-none list-none [&::-webkit-details-marker]:hidden">
+                Who is eligible to donate blood?
+                <span className="text-zinc-450 transition group-open:rotate-180 font-bold">&#9662;</span>
+              </summary>
+              <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-3 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                Generally, individuals between 18 and 65 years of age, weighing at least 45kg, and in good health are eligible to donate. Some medical conditions or travel histories may temporarily defer eligibility.
+              </p>
+            </details>
+
+            <details className="group bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 cursor-pointer outline-none">
+              <summary className="flex items-center justify-between font-bold text-zinc-800 dark:text-zinc-200 text-sm md:text-base select-none list-none [&::-webkit-details-marker]:hidden">
+                How often can I donate blood?
+                <span className="text-zinc-450 transition group-open:rotate-180 font-bold">&#9662;</span>
+              </summary>
+              <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-3 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                Healthy donors can safely donate whole blood every 3 months (90 days). This interval allows the body's iron stores and red blood cells to fully replenish.
+              </p>
+            </details>
+
+            <details className="group bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 cursor-pointer outline-none">
+              <summary className="flex items-center justify-between font-bold text-zinc-800 dark:text-zinc-200 text-sm md:text-base select-none list-none [&::-webkit-details-marker]:hidden">
+                Is blood donation safe?
+                <span className="text-zinc-450 transition group-open:rotate-180 font-bold">&#9662;</span>
+              </summary>
+              <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-3 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                Yes, absolutely. Blood donation is conducted in sterile environments by trained healthcare professionals using new, disposable single-use needles. There is no risk of contracting blood-borne infections.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        {/* Newsletter/Call to Action */}
+        <section className="bg-white dark:bg-zinc-900 border border-zinc-205/60 dark:border-zinc-800/60 rounded-3xl p-8 md:p-12 shadow-sm text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-rose-500/5 to-red-500/5 pointer-events-none" />
+          <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+              Get Emergency Alerts
+            </h2>
+            <p className="text-sm text-zinc-555 dark:text-zinc-400 max-w-xl mx-auto leading-relaxed">
+              Subscribe to receive instant updates when a critical, urgent blood request is raised in your local city or neighborhood.
+            </p>
+            
+            {subscribed ? (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-650 dark:text-emerald-400 rounded-2xl text-sm font-bold animate-scale-up">
+                🎉 Thank you for subscribing! We will notify you in case of local emergencies.
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newsletterEmail) {
+                    setSubscribed(true);
+                    setNewsletterEmail('');
+                  }
+                }}
+                className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto pt-2"
+              >
+                <input
+                  required
+                  type="email"
+                  placeholder="Enter your email address"
+                  className="flex-1 px-4 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-505 transition-all"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-6 py-3 rounded-2xl text-sm transition-all duration-200 shadow-md shadow-rose-500/10 active:scale-[0.99] cursor-pointer"
+                >
+                  Subscribe
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-zinc-950 border-t border-zinc-200/60 dark:border-zinc-800/60 py-12 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          <p>&copy; {new Date().getFullYear()} LifeFlow Inc. All rights reserved.</p>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mb-8 pb-8 border-b border-zinc-105 dark:border-zinc-900">
+            <div>
+              <span className="text-base font-bold text-zinc-900 dark:text-white block mb-3">Life<span className="text-rose-600">Flow</span></span>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-xs">
+                To bridge the gap between blood donors and patients in critical need through a secure, efficient, and community-driven digital platform.
+              </p>
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-500 block mb-3">Quick Links</span>
+              <div className="flex flex-col gap-2">
+                <Link href="/about" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">About Mission</Link>
+                <Link href="/contact" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Contact & Support</Link>
+                <Link href="/explore" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Find Donors</Link>
+              </div>
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-500 block mb-3">Legal & Terms</span>
+              <div className="flex flex-col gap-2">
+                <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Privacy Policy</Link>
+                <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Terms of Service</Link>
+              </div>
+            </div>
+          </div>
+          <div className="text-center text-xs text-zinc-500 dark:text-zinc-400">
+            <p>&copy; {new Date().getFullYear()} LifeFlow Inc. All rights reserved.</p>
+          </div>
         </div>
       </footer>
+
+      {/* Details Modal */}
+      {selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden text-left transition-all">
+            <button
+              onClick={() => setSelectedRequest(null)}
+              className="absolute top-4 right-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-full p-2 transition-colors cursor-pointer border-none"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center shadow-lg shadow-rose-500/20 shrink-0">
+                <span className="text-2xl font-black">{selectedRequest.bloodGroup}</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
+                  Required Blood Group: {selectedRequest.bloodGroup}
+                </h3>
+                <div className="flex gap-2 mt-1">
+                  {selectedRequest.urgencyLevel === 'Urgent' ? (
+                    <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                      <span className="inline-block h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></span> Urgent
+                    </span>
+                  ) : (
+                    <span className="bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                      Normal
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Case Image */}
+            {selectedRequest.imageUrl ? (
+              <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 aspect-video bg-zinc-50 dark:bg-zinc-955 flex items-center justify-center">
+                <img
+                  src={selectedRequest.imageUrl}
+                  alt={`${selectedRequest.patientName}'s Case`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="mb-6 rounded-2xl p-6 border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col items-center justify-center text-center">
+                <ImageIcon className="w-10 h-10 text-zinc-300 dark:text-zinc-700 mb-2" />
+                <p className="text-xs text-zinc-450 dark:text-zinc-500">No medical case image uploaded by requester</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Patient Name</span>
+                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.patientName}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Contact Number</span>
+                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.contactNumber}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Hospital</span>
+                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.hospitalName}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Location</span>
+                  <p className="mt-1 text-sm font-bold text-zinc-850 dark:text-zinc-200">{selectedRequest.location}</p>
+                </div>
+              </div>
+
+              <div className="pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Requester Email</span>
+                <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{selectedRequest.email}</p>
+              </div>
+
+              {selectedRequest.createdAt && (
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-505">Posted On</span>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    {new Date(selectedRequest.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setSelectedRequest(null)}
+                className="flex-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer border-none"
+              >
+                Close
+              </button>
+              <a
+                href={`tel:${selectedRequest.contactNumber}`}
+                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/20 text-center"
+              >
+                <Phone className="w-4 h-4" /> Call Coordinator
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

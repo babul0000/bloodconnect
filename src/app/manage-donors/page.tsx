@@ -4,13 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, Trash2, ShieldAlert, ArrowLeft, RefreshCw, User, MapPin } from 'lucide-react';
 
-interface Donor {
-  _id: string;
-  name: string;
-  bloodType: string;
-  location: string;
-  createdAt?: string;
-}
+import { Donor } from '@/lib/types';
+import { fetchAllDonors } from '@/lib/get/donors';
+import { deleteDonor } from '@/lib/post/donors';
 
 export default function ManageDonorsPage() {
   const [donors, setDonors] = useState<Donor[]>([]);
@@ -22,14 +18,8 @@ export default function ManageDonorsPage() {
     setIsLoading(true);
     setError('');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/donors`);
-      if (res.ok) {
-        const data = await res.json();
-        setDonors(data);
-      } else {
-        setError('Failed to fetch donors list.');
-      }
+      const data = await fetchAllDonors();
+      setDonors(data);
     } catch (err) {
       console.error('Error fetching donors:', err);
       setError('Backend connection error. Please verify the server is running.');
@@ -49,17 +39,9 @@ export default function ManageDonorsPage() {
 
     setDeletingId(id);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/donors/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok || res.status === 204) {
-        // Remove donor from local state
-        setDonors(donors.filter(donor => donor._id !== id));
-      } else {
-        alert('Failed to delete donor. Please try again.');
-      }
+      await deleteDonor(id);
+      // Remove donor from local state
+      setDonors(donors.filter(donor => donor._id !== id));
     } catch (err) {
       console.error('Error deleting donor:', err);
       alert('Error connecting to backend server.');
