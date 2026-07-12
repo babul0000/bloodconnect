@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from '@/lib/auth-client';
@@ -27,7 +27,7 @@ type FormValues = z.infer<typeof requestSchema>;
 export default function AddRequestPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const user = session?.user;
+  const user = session?.user as any;
 
   const [patientName, setPatientName] = useState('');
   const [bloodGroup, setBloodGroup] = useState('A+');
@@ -43,7 +43,14 @@ export default function AddRequestPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [apiError, setApiError] = useState('');
 
-  if (isPending) {
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!isPending && !user) {
+      router.push('/auth/signin');
+    }
+  }, [user, isPending, router]);
+
+  if (isPending || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white px-4 py-16">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-rose-600" />
@@ -115,32 +122,32 @@ export default function AddRequestPage() {
       {/* Background neon blur glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-xl z-10 transition-all">
+      <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 md:p-10 shadow-xl z-10 transition-all">
         <div className="mb-6">
-          <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 hover:text-rose-500 dark:text-rose-400 dark:hover:text-rose-300 mb-4 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-rose-600 hover:text-rose-500 dark:text-rose-400 dark:hover:text-rose-350 mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </Link>
-          <h2 className="text-zinc-900 dark:text-white text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Heart className="w-6 h-6 text-rose-600 fill-rose-600 animate-pulse" /> Request Blood
+          <h2 className="text-zinc-900 dark:text-white text-2xl font-black tracking-tight flex items-center gap-2.5">
+            <Heart className="w-6.5 h-6.5 text-rose-600 fill-rose-600 animate-pulse" /> Request Blood
           </h2>
-          <p className="text-zinc-550 dark:text-zinc-400 text-sm mt-1">Post a new request for emergency blood donors</p>
+          <p className="text-zinc-550 dark:text-zinc-400 text-sm mt-1.5">Post a new request for emergency blood donors</p>
         </div>
 
         {successMsg && (
-          <div className="mb-4 p-3.5 text-sm rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 font-bold">
+          <div className="mb-6 p-4 text-sm rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 font-bold">
             {successMsg}
           </div>
         )}
 
         {apiError && (
-          <div className="mb-4 p-3.5 text-sm rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 font-bold">
+          <div className="mb-6 p-4 text-sm rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 font-bold">
             {apiError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Patient Name */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Patient Name</label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
@@ -159,7 +166,7 @@ export default function AddRequestPage() {
           </div>
 
           {/* Blood Group */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Required Blood Group</label>
             <div className="relative">
               <Heart className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
@@ -186,7 +193,7 @@ export default function AddRequestPage() {
           </div>
 
           {/* Hospital Name */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Hospital Name</label>
             <div className="relative">
               <Landmark className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
@@ -194,7 +201,7 @@ export default function AddRequestPage() {
                 required
                 type="text"
                 placeholder="e.g. City General Hospital"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-500 transition-all ${
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-505 transition-all ${
                   errors.hospitalName ? 'border-rose-500' : 'border-zinc-200 dark:border-zinc-800'
                 }`}
                 value={hospitalName}
@@ -205,7 +212,7 @@ export default function AddRequestPage() {
           </div>
 
           {/* Location */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Hospital Location (City, Area)</label>
             <div className="relative">
               <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
@@ -224,7 +231,7 @@ export default function AddRequestPage() {
           </div>
 
           {/* Contact Number */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-555 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Contact Number</label>
             <div className="relative">
               <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-505" />
@@ -243,30 +250,30 @@ export default function AddRequestPage() {
           </div>
 
           {/* Patient Image / Diagnostic Report Image */}
-          <div className="space-y-1 text-left">
+          <div className="space-y-1.5 text-left md:col-span-1">
             <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Patient / Case Image</label>
             <div className="relative flex flex-col gap-2">
-              <div className={`w-full border border-dashed rounded-xl p-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-transparent ${
+              <div className={`w-full border border-dashed rounded-xl px-4 py-2 flex flex-col items-center justify-center bg-zinc-50 dark:bg-transparent ${
                 imagePreview ? 'border-rose-500/50' : 'border-zinc-200 dark:border-zinc-800'
               }`}>
                 {imagePreview ? (
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden border border-zinc-205 dark:border-zinc-800 flex items-center justify-center">
-                    <img src={imagePreview} alt="Preview" className="h-full object-contain" />
+                  <div className="relative w-full h-[38px] rounded-lg overflow-hidden border border-zinc-205 dark:border-zinc-800 flex items-center justify-between px-2">
+                    <span className="text-xs text-zinc-500 truncate max-w-[150px]">Image selected</span>
                     <button
                       type="button"
                       onClick={() => {
                         setImageFile(null);
                         setImagePreview(null);
                       }}
-                      className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 shadow-md transition-colors cursor-pointer"
+                      className="text-rose-600 hover:text-rose-500 bg-transparent border-none cursor-pointer p-1"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center cursor-pointer py-4 w-full">
-                    <ImageIcon className="w-8 h-8 text-zinc-400 mb-2" />
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">Click to upload image (Optional)</span>
+                  <label className="flex items-center justify-center cursor-pointer py-2 w-full gap-2">
+                    <ImageIcon className="w-5 h-5 text-zinc-400" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">Upload case photo (Optional)</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -286,7 +293,7 @@ export default function AddRequestPage() {
           </div>
 
           {/* Urgency Level Toggle/Selector */}
-          <div className="space-y-2 text-left pt-1">
+          <div className="space-y-2 text-left pt-1 md:col-span-2">
             <label className="text-zinc-550 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Urgency Level</label>
             <div className="flex gap-4">
               <button
@@ -315,17 +322,19 @@ export default function AddRequestPage() {
           </div>
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl py-3.5 mt-4 transition-all duration-200 shadow-lg shadow-rose-500/20 active:scale-[0.99] disabled:opacity-50 cursor-pointer text-sm flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-200 border-t-white" />
-            ) : (
-              'Submit Request'
-            )}
-          </button>
+          <div className="md:col-span-2 pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl py-3.5 transition-all duration-200 shadow-lg shadow-rose-500/20 active:scale-[0.99] disabled:opacity-50 cursor-pointer text-sm flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-200 border-t-white" />
+              ) : (
+                'Submit Request'
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

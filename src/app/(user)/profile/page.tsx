@@ -10,7 +10,7 @@ import { updateProfile } from '@/lib/post/profile';
 
 export default function ProfilePage() {
   const { data: session, isPending } = useSession();
-  const user = session?.user;
+  const user = session?.user as any;
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');

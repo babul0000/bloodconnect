@@ -9,9 +9,46 @@ import { Heart, Search, MapPin, Phone, Award, Shield, User, Landmark, AlertCircl
 import { BloodRequest } from '@/lib/types';
 import { fetchAllRequests } from '@/lib/get/requests';
 import { fetchAllDonors } from '@/lib/get/donors';
+import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 
 export default function Home() {
+  const router = useRouter();
   const { user, login, logout } = useAuth();
+
+  const handleDemoLogin = async (emailVal: string, passwordVal: string, nameVal: string, roleVal: string) => {
+    try {
+      console.log(`Ensuring demo user exists for ${emailVal}...`);
+      await authClient.signUp.email({
+        email: emailVal,
+        password: passwordVal,
+        name: nameVal,
+        role: roleVal,
+        bloodGroup: "O+",
+        contactNumber: "+1234567890",
+        lastDonationDate: "",
+        medicalEligibility: true,
+      } as any);
+    } catch (e) {
+      console.log("Demo user registration skipped/failed (may already exist).");
+    }
+
+    try {
+      const response = await authClient.signIn.email({
+        email: emailVal,
+        password: passwordVal,
+      });
+
+      if (response?.error) {
+        alert(response.error.message || "Demo login failed.");
+      } else {
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Demo login error:", error);
+      alert("Something went wrong during demo login.");
+    }
+  };
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<BloodRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
@@ -117,70 +154,85 @@ export default function Home() {
           />
         </div>
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center md:text-left">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-400 ring-1 ring-inset ring-rose-500/30">
-              Introducing LifeFlow
-            </span>
-            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-              Be a Hero. Save a Life.
-            </h1>
-            <p className="mt-6 text-lg text-rose-100 max-w-xl">
-              Connect directly with critical blood request requirements in your area or raise a request to summon help instantly.
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-6">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-400 ring-1 ring-inset ring-rose-500/30">
+                Introducing LifeFlow
+              </span>
+              <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
+                Be a Hero. Save a Life.
+              </h1>
+              <p className="mt-6 text-lg text-rose-100 max-w-xl">
+                Connect directly with critical blood request requirements in your area or raise a request to summon help instantly.
+              </p>
 
-            {/* Blood Request Search Bar */}
-            <form onSubmit={handleSearch} className="mt-10 flex flex-col sm:flex-row gap-3 max-w-xl bg-white dark:bg-zinc-900 p-2.5 rounded-2xl shadow-xl border border-zinc-200/20">
-              <div className="flex-1 px-4 py-2 flex flex-col justify-center text-left">
-                <span className="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
-                  <Heart className="w-3.5 h-3.5 text-rose-500" /> Blood Group
-                </span>
-                <select
-                  value={searchBloodType}
-                  onChange={(e) => setSearchBloodType(e.target.value)}
-                  className="bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-50 border-none outline-none mt-1 cursor-pointer w-full"
-                >
-                  <option value="" className="text-zinc-900 dark:bg-zinc-900">All Groups</option>
-                  <option value="A+" className="text-zinc-900 dark:bg-zinc-900">A+</option>
-                  <option value="A-" className="text-zinc-900 dark:bg-zinc-900">A-</option>
-                  <option value="B+" className="text-zinc-900 dark:bg-zinc-900">B+</option>
-                  <option value="B-" className="text-zinc-900 dark:bg-zinc-900">B-</option>
-                  <option value="O+" className="text-zinc-900 dark:bg-zinc-900">O+</option>
-                  <option value="O-" className="text-zinc-900 dark:bg-zinc-900">O-</option>
-                  <option value="AB+" className="text-zinc-900 dark:bg-zinc-900">AB+</option>
-                  <option value="AB-" className="text-zinc-900 dark:bg-zinc-900">AB-</option>
-                </select>
-              </div>
-              <div className="w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block"></div>
-              <div className="flex-1 px-4 py-2 flex flex-col justify-center text-left">
-                <span className="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-rose-500" /> Location
-                </span>
-                <input
-                  type="text"
-                  placeholder="e.g. Hospital name, City..."
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                  className="bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-50 border-none outline-none placeholder-zinc-400 mt-1 w-full"
+              {/* Blood Request Search Bar */}
+              <form onSubmit={handleSearch} className="mt-10 flex flex-col sm:flex-row gap-3 max-w-xl bg-white dark:bg-zinc-900 p-2.5 rounded-2xl shadow-xl border border-zinc-200/20">
+                <div className="flex-1 px-4 py-2 flex flex-col justify-center text-left">
+                  <span className="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-505 flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5 text-rose-500" /> Blood Group
+                  </span>
+                  <select
+                    value={searchBloodType}
+                    onChange={(e) => setSearchBloodType(e.target.value)}
+                    className="bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-50 border-none outline-none mt-1 cursor-pointer w-full"
+                  >
+                    <option value="" className="text-zinc-900 dark:bg-zinc-900">All Groups</option>
+                    <option value="A+" className="text-zinc-900 dark:bg-zinc-900">A+</option>
+                    <option value="A-" className="text-zinc-900 dark:bg-zinc-900">A-</option>
+                    <option value="B+" className="text-zinc-900 dark:bg-zinc-900">B+</option>
+                    <option value="B-" className="text-zinc-900 dark:bg-zinc-900">B-</option>
+                    <option value="O+" className="text-zinc-900 dark:bg-zinc-900">O+</option>
+                    <option value="O-" className="text-zinc-900 dark:bg-zinc-900">O-</option>
+                    <option value="AB+" className="text-zinc-900 dark:bg-zinc-900">AB+</option>
+                    <option value="AB-" className="text-zinc-900 dark:bg-zinc-900">AB-</option>
+                  </select>
+                </div>
+                <div className="w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block"></div>
+                <div className="flex-1 px-4 py-2 flex flex-col justify-center text-left">
+                  <span className="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-505 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-rose-500" /> Location
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="e.g. Hospital name, City..."
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                    className="bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-50 border-none outline-none placeholder-zinc-400 mt-1 w-full"
+                  />
+                </div>
+                <div className="flex gap-2 shrink-0 items-center justify-end p-1">
+                  {(searchBloodType || searchLocation) && (
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 font-semibold text-sm h-11 px-4 rounded-xl transition-all duration-200 cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm h-11 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-rose-600/20 cursor-pointer"
+                  >
+                    <Search className="w-4 h-4" /> Search
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Premium Donor Photo Illustration */}
+            <div className="lg:col-span-6 flex justify-center lg:justify-end animate-fadeIn">
+              <div className="relative group max-w-[550px] w-full aspect-square rounded-3xl overflow-hidden border border-rose-500/20 shadow-2xl shadow-rose-500/10 hover:scale-102 transition-transform duration-500 select-none">
+                <Image
+                  src="/lifeflow_donor_photo.png"
+                  alt="LifeFlow - Donate Blood, Save Lives"
+                  fill
+                  className="object-cover"
+                  priority
                 />
               </div>
-              <div className="flex gap-2 shrink-0 items-center justify-end p-1">
-                {(searchBloodType || searchLocation) && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 font-semibold text-sm h-11 px-4 rounded-xl transition-all duration-200 cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm h-11 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-rose-600/20 cursor-pointer"
-                >
-                  <Search className="w-4 h-4" /> Search
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       </header>
@@ -289,9 +341,21 @@ export default function Home() {
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-rose-600" />
-              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Loading active requests...</span>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 animate-pulse">
+                  <div className="aspect-[4/2] w-full bg-zinc-200/60 dark:bg-zinc-800/60 flex items-center justify-center border-b border-zinc-100 dark:border-zinc-800" />
+                  <div className="flex flex-1 flex-col p-6 space-y-3">
+                    <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3" />
+                    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
+                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3" />
+                    <div className="flex gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                      <div className="h-9 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex-1" />
+                      <div className="h-9 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex-1" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="text-center py-16 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-8">
@@ -302,7 +366,7 @@ export default function Home() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
               {filteredRequests.slice(0, 6).map((request) => (
                 <div key={request._id} className="group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   
@@ -630,9 +694,9 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-zinc-950 border-t border-zinc-200/60 dark:border-zinc-800/60 py-12 transition-colors duration-300">
+      <footer className="bg-white dark:bg-zinc-955 border-t border-zinc-200/60 dark:border-zinc-800/60 py-12 transition-colors duration-300">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mb-8 pb-8 border-b border-zinc-105 dark:border-zinc-900">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-left mb-8 pb-8 border-b border-zinc-105 dark:border-zinc-900">
             <div>
               <span className="text-base font-bold text-zinc-900 dark:text-white block mb-3">Life<span className="text-rose-600">Flow</span></span>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-xs">
@@ -652,6 +716,23 @@ export default function Home() {
               <div className="flex flex-col gap-2">
                 <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Privacy Policy</Link>
                 <Link href="#" className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium">Terms of Service</Link>
+              </div>
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-405 dark:text-zinc-500 block mb-3">Developer Demo</span>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => handleDemoLogin("john@staynest.com", "password123", "John Doe", "user")}
+                  className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium bg-transparent border-none outline-none text-left cursor-pointer p-0 block"
+                >
+                  Demo User Login
+                </button>
+                <button
+                  onClick={() => handleDemoLogin("admin@staynest.com", "password123", "Admin User", "admin")}
+                  className="text-xs text-zinc-550 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-455 transition-colors font-medium bg-transparent border-none outline-none text-left cursor-pointer p-0 block"
+                >
+                  Demo Admin Login
+                </button>
               </div>
             </div>
           </div>

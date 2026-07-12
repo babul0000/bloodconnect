@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StayNest - Find Your Perfect Stay",
-  description: "Book unique stays, vacation homes, and more on StayNest.",
+  title: "LifeFlow - Blood Donation & Community Platform",
+  description: "Connect directly with critical blood request requirements in your area or raise a request to summon help instantly.",
+  icons: {
+    icon: "/heart_blood_bag.png",
+  },
 };
 
 export default function RootLayout({

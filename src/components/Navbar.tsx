@@ -10,7 +10,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const user = session?.user;
+  const user = session?.user as any;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
@@ -58,7 +58,6 @@ export default function Navbar() {
   const loggedInLinks = [
     { label: 'Add Request', href: '/items/add' },
     { label: 'Manage Requests', href: '/items/manage' },
-    { label: 'Profile', href: '/profile' },
   ];
 
   if (user?.role === 'admin') {

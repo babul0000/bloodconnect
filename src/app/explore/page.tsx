@@ -35,6 +35,7 @@ export default function ExplorePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
@@ -100,14 +101,39 @@ export default function ExplorePage() {
       );
     }
 
-    setFilteredRequests(results);
+    // Client-side sorting
+    const sortedResults = [...results];
+    if (sortBy === 'newest') {
+      sortedResults.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    } else if (sortBy === 'oldest') {
+      sortedResults.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else if (sortBy === 'urgency') {
+      sortedResults.sort((a, b) => {
+        if (a.urgencyLevel === 'Urgent' && b.urgencyLevel !== 'Urgent') return -1;
+        if (a.urgencyLevel !== 'Urgent' && b.urgencyLevel === 'Urgent') return 1;
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
+
+    setFilteredRequests(sortedResults);
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedBloodGroup, selectedUrgency, requests]);
+  }, [debouncedSearchTerm, selectedBloodGroup, selectedUrgency, sortBy, requests]);
 
   const handleReset = () => {
     setSearchTerm('');
     setSelectedBloodGroup('');
     setSelectedUrgency('');
+    setSortBy('newest');
   };
 
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -133,7 +159,7 @@ export default function ExplorePage() {
 
         {/* Search & Filters Controls */}
         <section className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-6 md:p-8 shadow-sm mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             
             {/* Search Input with Debounce Status */}
             <div className="space-y-1.5 text-left">
@@ -200,9 +226,25 @@ export default function ExplorePage() {
                 <option value="Normal">Normal Urgency</option>
               </select>
             </div>
+
+            {/* Sorting select */}
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
+                Sort Options
+              </label>
+              <select
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-transparent text-zinc-900 dark:text-white text-sm outline-none focus:border-rose-500 transition-all cursor-pointer"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="newest">Newest Requests</option>
+                <option value="oldest">Oldest Requests</option>
+                <option value="urgency">Urgent Cases First 🚨</option>
+              </select>
+            </div>
           </div>
 
-          {(searchTerm || selectedBloodGroup || selectedUrgency) && (
+          {(searchTerm || selectedBloodGroup || selectedUrgency || sortBy !== 'newest') && (
             <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
               <button
                 onClick={handleReset}
@@ -217,9 +259,21 @@ export default function ExplorePage() {
         {/* Results Listings Grid */}
         <section>
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-rose-600" />
-              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Loading requests...</span>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 animate-pulse">
+                  <div className="aspect-[4/2] w-full bg-zinc-200/60 dark:bg-zinc-800/60 flex items-center justify-center border-b border-zinc-100 dark:border-zinc-800" />
+                  <div className="flex flex-1 flex-col p-6 space-y-3">
+                    <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3" />
+                    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
+                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3" />
+                    <div className="flex gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+                      <div className="h-9 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex-1" />
+                      <div className="h-9 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex-1" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="text-center py-24 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-8">
@@ -231,7 +285,7 @@ export default function ExplorePage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
                 {currentRequests.map((request) => (
                   <div key={request._id} className="group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                     

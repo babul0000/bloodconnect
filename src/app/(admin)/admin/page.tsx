@@ -52,7 +52,7 @@ interface AnalyticsData {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const user = session?.user;
+  const user = session?.user as any;
 
   // Tabs: 'analytics', 'moderation', 'users'
   const [activeTab, setActiveTab] = useState<'analytics' | 'moderation' | 'users'>('analytics');

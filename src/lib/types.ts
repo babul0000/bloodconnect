@@ -9,6 +9,7 @@ export interface BloodRequest {
   email: string;
   imageUrl?: string;
   createdAt?: string;
+  status?: string;
 }
 
 export interface Donor {

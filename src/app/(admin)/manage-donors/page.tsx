@@ -31,7 +31,7 @@ interface DonorRecord {
 export default function ManageDonorsPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const user = session?.user;
+  const user = session?.user as any;
 
   const [donors, setDonors] = useState<DonorRecord[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<DonorRecord[]>([]);

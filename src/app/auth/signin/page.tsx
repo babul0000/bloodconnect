@@ -10,7 +10,7 @@ export default function SignInPage() {
   const router = useRouter();
 
   useEffect(() => {
-    document.title = "Sign In | PromptForge";
+    document.title = "Sign In | LifeFlow";
   }, []);
 
   const [email, setEmail] = useState("");
@@ -21,20 +21,90 @@ export default function SignInPage() {
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
+  const handleDemoSignIn = async (emailVal: string, passwordVal: string, nameVal: string, roleVal: string) => {
+    setErrorMessage("");
+    setIsLoading(true);
+    try {
+      console.log(`Ensuring demo user exists for ${emailVal}...`);
+      await authClient.signUp.email({
+        email: emailVal,
+        password: passwordVal,
+        name: nameVal,
+        role: roleVal,
+        bloodGroup: "O+",
+        contactNumber: "+1234567890",
+        lastDonationDate: "",
+        medicalEligibility: true,
+      } as any);
+    } catch (e) {
+      console.log("Demo user registration skipped/failed (may already exist).");
+    }
+
+    try {
+      const response = await authClient.signIn.email({
+        email: emailVal,
+        password: passwordVal,
+      });
+
+      if (response?.error) {
+        console.error("Demo login failed error:", response.error);
+        setErrorMessage(response.error.message || "Demo login failed.");
+      } else {
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Demo login error:", error);
+      setErrorMessage("Something went wrong during demo login.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSigninSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
     const credentials = {
-      email: email,
+      email: cleanEmail,
       password: password,
     };
 
-    console.log("Attempting sign-in with credentials:", { email });
+    console.log("Attempting sign-in with credentials:", { email: cleanEmail });
 
     try {
-      const response = await authClient.signIn.email(credentials);
+      let response = await authClient.signIn.email(credentials);
+
+      if (response?.error) {
+        // Fallback for demo users: if they don't exist in the database yet, register them and retry login
+        if (cleanEmail === "john@staynest.com" || cleanEmail === "admin@staynest.com") {
+          console.log(`Auto-registering demo account for ${cleanEmail}...`);
+          try {
+            const signupRes = await authClient.signUp.email({
+              email: cleanEmail,
+              password,
+              name: cleanEmail === "john@staynest.com" ? "John Doe" : "Admin User",
+              role: cleanEmail === "john@staynest.com" ? "user" : "admin",
+              bloodGroup: "O+",
+              contactNumber: "+1234567890",
+              lastDonationDate: "",
+              medicalEligibility: true,
+            } as any);
+
+            if (signupRes?.error) {
+              console.error("Auto-registration API returned error:", signupRes.error);
+            } else {
+              console.log("Auto-registration API succeeded!");
+            }
+
+            // Retry sign-in
+            response = await authClient.signIn.email(credentials);
+          } catch (signUpErr) {
+            console.error("Auto-registration fallback failed:", signUpErr);
+          }
+        }
+      }
 
       if (response?.error) {
         console.error("Signin failed response error:", response.error);
@@ -46,39 +116,6 @@ export default function SignInPage() {
     } catch (error) {
       console.error("Signin unexpected error:", error);
       setErrorMessage("Something went wrong. Please check your backend server.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setErrorMessage("");
-    setIsLoading(true);
-    const demoCredentials = {
-      email: "recruiter@lifeflow.com",
-      password: "Password123!",
-    };
-
-    try {
-      let response = await authClient.signIn.email(demoCredentials);
-      if (response?.error) {
-        console.log("Demo user not found, signing up...");
-        const signUpResponse = await authClient.signUp.email({
-          email: demoCredentials.email,
-          password: demoCredentials.password,
-          name: "Demo Recruiter",
-        });
-        if (signUpResponse?.error) {
-          setErrorMessage(signUpResponse.error.message || "Demo login failed.");
-        } else {
-          router.push("/");
-        }
-      } else {
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("Demo login error:", error);
-      setErrorMessage("Something went wrong with the demo login.");
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +149,7 @@ export default function SignInPage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-4 p-3 text-xs rounded-xl bg-red-500/15 border border-red-500/20 text-red-650 dark:text-red-400">
+          <div className="mb-4 p-3 text-xs rounded-xl bg-red-500/15 border border-red-500/20 text-red-655 dark:text-red-400">
             {errorMessage}
           </div>
         )}
@@ -169,16 +206,6 @@ export default function SignInPage() {
           >
             Sign In
           </Button>
-
-          {/* Demo Login Button */}
-          <Button
-            type="button"
-            onClick={handleDemoLogin}
-            isPending={isLoading}
-            className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 font-bold rounded-xl py-6 border border-rose-200/50 dark:border-rose-900/30 transition-transform active:scale-[0.99] cursor-pointer"
-          >
-            Demo Login (Recruiter Access)
-          </Button>
         </form>
 
         <div className="relative my-5">
@@ -206,7 +233,7 @@ export default function SignInPage() {
               <path d="M12,5.7c1.41,0 2.68,0.49 3.68,1.44l2.76,-2.76C16.78,2.78 14.6,1.9 12,1.9 8.24,1.9 4.94,3.77 3.34,6.73l3.52,2.74C7.59,7.31 9.61,5.7 12,5.7z" fill="#EA4335" />
             </g>
           </svg>
-          Google
+          <span className="text-zinc-900 dark:text-zinc-100 font-bold">Google</span>
         </Button>
 
         <p className="text-center text-xs text-zinc-550 dark:text-zinc-400 mt-5">

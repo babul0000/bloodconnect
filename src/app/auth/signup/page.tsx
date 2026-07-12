@@ -10,7 +10,7 @@ export default function SignUpPage() {
   const router = useRouter();
 
   useEffect(() => {
-    document.title = "Sign Up | PromptForge";
+    document.title = "Sign Up | LifeFlow";
   }, []);
 
   const [name, setName] = useState("");
@@ -58,39 +58,6 @@ export default function SignUpPage() {
     } catch (error) {
       console.error("Signup Failed with Error:", error);
       setErrorMessage("Something went wrong. Please check your terminal or connection.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setErrorMessage("");
-    setIsLoading(true);
-    const demoCredentials = {
-      email: "recruiter@lifeflow.com",
-      password: "Password123!",
-    };
-
-    try {
-      let response = await authClient.signIn.email(demoCredentials);
-      if (response?.error) {
-        console.log("Demo user not found, signing up...");
-        const signUpResponse = await authClient.signUp.email({
-          email: demoCredentials.email,
-          password: demoCredentials.password,
-          name: "Demo Recruiter",
-        });
-        if (signUpResponse?.error) {
-          setErrorMessage(signUpResponse.error.message || "Demo login failed.");
-        } else {
-          router.push("/");
-        }
-      } else {
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("Demo login error:", error);
-      setErrorMessage("Something went wrong with the demo login.");
     } finally {
       setIsLoading(false);
     }
@@ -250,35 +217,6 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Role Radio Selector */}
-          <div className="space-y-2 pt-1 text-left">
-            <label className="text-zinc-555 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider block">Signup As</label>
-            <div className="flex gap-6 text-sm text-zinc-800 dark:text-white font-medium">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="radio"
-                  name="role"
-                  value="user"
-                  checked={role === "user"}
-                  onChange={() => setRole("user")}
-                  className="accent-rose-500 h-4 w-4 cursor-pointer"
-                />
-                Regular User
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="radio"
-                  name="role"
-                  value="creator"
-                  checked={role === "creator"}
-                  onChange={() => setRole("creator")}
-                  className="accent-rose-500 h-4 w-4 cursor-pointer"
-                />
-                Volunteer/Creator
-              </label>
-            </div>
-          </div>
-
           {/* Submit Button */}
           <Button
             type="submit"
@@ -286,16 +224,6 @@ export default function SignUpPage() {
             className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl py-6 mt-4 shadow-md transition-transform active:scale-[0.99] cursor-pointer"
           >
             Sign Up
-          </Button>
-
-          {/* Demo Login Button */}
-          <Button
-            type="button"
-            onClick={handleDemoLogin}
-            isPending={isLoading}
-            className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:hover:bg-rose-955/40 dark:text-rose-400 font-bold rounded-xl py-6 border border-rose-200/50 dark:border-rose-900/30 transition-transform active:scale-[0.99] cursor-pointer"
-          >
-            Demo Login (Recruiter Access)
           </Button>
         </form>
 
@@ -314,7 +242,7 @@ export default function SignUpPage() {
           type="button"
           onClick={handleGoogleSignUp}
           isPending={isLoading}
-          className="w-full bg-transparent border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-909 dark:text-white font-semibold rounded-xl py-6 flex items-center justify-center gap-2 cursor-pointer transition-all duration-300"
+          className="w-full bg-transparent border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-900 dark:text-white font-semibold rounded-xl py-6 flex items-center justify-center gap-2 cursor-pointer transition-all duration-300"
         >
           <svg className="w-5 h-5 mr-1" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
             <g transform="matrix(1, 0, 0, 1, 0, 0)">
@@ -324,7 +252,7 @@ export default function SignUpPage() {
               <path d="M12,5.7c1.41,0 2.68,0.49 3.68,1.44l2.76,-2.76C16.78,2.78 14.6,1.9 12,1.9 8.24,1.9 4.94,3.77 3.34,6.73l3.52,2.74C7.59,7.31 9.61,5.7 12,5.7z" fill="#EA4335" />
             </g>
           </svg>
-          Google
+          <span className="text-zinc-900 dark:text-zinc-100 font-bold">Google</span>
         </Button>
 
         <p className="text-center text-xs text-zinc-550 dark:text-zinc-400 mt-5">
